@@ -1,0 +1,14 @@
+# Ignorar archivos compilados
+/bin/
+*.class
+
+# Ignorar configuración de VS Code
+.vscode/
+
+# Archivos temporales del sistema
+*.log
+*.tmp
+*.swp
+
+#ignorar backups de editores
+*~
