@@ -2,7 +2,6 @@ package Servidores;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -13,7 +12,6 @@ import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.spec.InvalidParameterSpecException;
@@ -39,8 +37,8 @@ import javax.crypto.KeyAgreement;
 public class ServidorMain {
     private static HashMap<String, String> servicios = new HashMap<>();
     private static final int PUERTO = 65000;
-    private static PublicKey llavePublica;
-    private static PrivateKey llavePrivada;
+    private static PublicKey llavePublicaFirmas;
+    private static PrivateKey llavePrivadaFirmas;
 
     public static void main(String[] args){
 
@@ -51,8 +49,8 @@ public class ServidorMain {
             System.out.println("Servidor iniciado");
 
             //Paso 0a.
-            llavePublica = CifradoUtils.leerPublica();
-            llavePrivada = CifradoUtils.leerPrivada();
+            llavePublicaFirmas = CifradoUtils.leerPublica();
+            llavePrivadaFirmas = CifradoUtils.leerPrivada();
 
             Socket socket;
             DataInputStream in;
@@ -73,9 +71,9 @@ public class ServidorMain {
 
                 //Creando rta y enviando
                 Signature firma = Signature.getInstance("SHAwithRSA");
-                firma.initSign(llavePrivada);
+                firma.initSign(llavePrivadaFirmas);
                 firma.update(retoBy);
-                
+
                 byte[] firmaBy = firma.sign();
                 out.writeObject(firmaBy);
 
@@ -107,16 +105,16 @@ public class ServidorMain {
                 //Generacion de F(K_w-, (G, P, G^x))
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ObjectOutputStream oos = new ObjectOutputStream(baos);
-                
+
                 oos.writeObject(G);
                 oos.writeObject(P);
                 oos.writeObject(Gx);
                 oos.flush();
-                
+
                 byte[] mensaje = baos.toByteArray();
 
                 Signature firma2 = Signature.getInstance("SHA256withRSA");
-                firma2.initSign(llavePrivada);
+                firma2.initSign(llavePrivadaFirmas);
                 firma2.update(mensaje);
 
                 byte[] firma2By = firma2.sign();
@@ -151,17 +149,17 @@ public class ServidorMain {
                 MessageDigest sha = MessageDigest.getInstance("SHA-512");
                 byte[] k_ab1 = sha.digest(secretitoComp);
 
-                byte[] aesKey = new byte[16];
-                byte[] hmacKey = new byte[16];
+                byte[] aesKey = new byte[32];
+                byte[] hmacKey = new byte[32];
 
-                System.arraycopy(k_ab1, 0, aesKey, 0, 16);
-                System.arraycopy(k_ab1, 16, hmacKey, 0, 32);
+                System.arraycopy(k_ab1, 0, aesKey, 0, 32);
+                System.arraycopy(k_ab1, 32, hmacKey, 0, 32);
 
             }
 
-        } catch (ClassNotFoundException | InvalidAlgorithmParameterException 
-            | IOException | NoSuchAlgorithmException | InvalidKeyException 
-            | SignatureException | InvalidParameterSpecException 
+        } catch (ClassNotFoundException | InvalidAlgorithmParameterException
+            | IOException | NoSuchAlgorithmException | InvalidKeyException
+            | SignatureException | InvalidParameterSpecException
             | InvalidKeySpecException e) {
             e.printStackTrace();
         }
