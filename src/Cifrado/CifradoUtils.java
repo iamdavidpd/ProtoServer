@@ -4,27 +4,28 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.security.Key;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 
 import javax.crypto.Cipher;
+import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 
 public class CifradoUtils {
     
     private final static String PADDING = "AES/CBC/PKCS5Padding";
 
-    public static byte[] simetricoCifrar(SecretKey llave, String texto){
+    public static byte[] simetricoCifrar(SecretKey llave, SecureRandom iv, String texto){
         byte[] textoCifrado;
 
         try {
             Cipher cifrador = Cipher.getInstance(PADDING);
             byte[] textoClaro = texto.getBytes();
 
-            cifrador.init(Cipher.ENCRYPT_MODE, llave);
+            cifrador.init(Cipher.ENCRYPT_MODE, llave, iv);
+
             textoCifrado = cifrador.doFinal(textoClaro);
 
             return textoCifrado;
@@ -34,12 +35,12 @@ public class CifradoUtils {
         }
     }
 
-    public static byte[] simetricoDescifrar(SecretKey llave, byte[] texto){
+    public static byte[] simetricoDescifrar(SecretKey llave, SecureRandom iv, byte[] texto){
         byte[] textoClaro;
 
         try {
             Cipher	cifrador = Cipher.getInstance(PADDING);
-            cifrador.init(Cipher.DECRYPT_MODE, llave);
+            cifrador.init(Cipher.DECRYPT_MODE, llave, iv);
             textoClaro = cifrador.doFinal(texto);
         } catch (Exception e) {
             System.out.println("Excepcion: " + e.getMessage());
@@ -113,6 +114,18 @@ public class CifradoUtils {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    public static byte[] hmac(String algoritmo, SecretKey llave, byte[] texto){
+        byte[] digest = null;
+        try {
+            Mac mac = Mac.getInstance(algoritmo);
+            mac.init(llave);
+            digest = mac.doFinal(texto);
+        } catch (Exception e) {
+            System.out.println("Excepcion: " + e.getMessage());
+        }
+        return digest;
     }
 
 }
