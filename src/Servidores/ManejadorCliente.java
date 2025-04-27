@@ -18,6 +18,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Signature;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import javax.crypto.KeyAgreement;
@@ -55,7 +56,7 @@ public class ManejadorCliente extends Thread {
             byte[] retoBy = ByteBuffer.allocate(4).putInt(reto).array();
 
             //Creando rta y enviando
-            Signature firma = Signature.getInstance("SHAwithRSA");
+            Signature firma = Signature.getInstance("SHA256withRSA");
             firma.initSign(llavePrivadaFirmas);
             firma.update(retoBy);
 
@@ -171,7 +172,7 @@ public class ManejadorCliente extends Thread {
             byte[] desciServer = CifradoUtils.simetricoDescifrar(aesKeySpec, ivSec, cifradoServer);
             byte[] hmacServerDesc = CifradoUtils.hmac("HMACSHA256", hmacKeySpec, desciServer);
 
-            if(hmacServerDesc.equals(hmacServer)){
+            if(Arrays.equals(hmacServerDesc, hmacServer)){
                 InetAddress inet = InetAddress.getLocalHost();
                 String ip = inet.getHostAddress();
                 String completo = ip + ":" +"65000";
@@ -179,7 +180,7 @@ public class ManejadorCliente extends Thread {
                 byte[] cifradoCompleto = CifradoUtils.simetricoCifrar(aesKeySpec, ivSec, completo);
                 byte[] hmacCompleto = CifradoUtils.hmac("HMACSHA256", hmacKeySpec, completoBy);
                 out.writeObject(cifradoCompleto);
-                out.write(hmacCompleto);
+                out.writeObject(hmacCompleto);
                 out.flush();
 
             //Recibiendo "OK"|"ERROR"

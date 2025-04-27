@@ -8,8 +8,10 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.rmi.server.ObjID;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -25,8 +27,10 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
 import javax.crypto.KeyAgreement;
@@ -35,6 +39,8 @@ import javax.crypto.SecretKey;
 import javax.crypto.interfaces.DHPublicKey;
 import javax.crypto.spec.DHParameterSpec;
 import javax.crypto.spec.DHPublicKeySpec;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 import Cifrado.CifradoUtils;
 
@@ -43,6 +49,11 @@ public class Cliente extends Thread{
     private PublicKey llavePublicaServidor ;
     private SecretKey llaveSesion;
     private SecretKey llaveHMAC;
+    private Socket socket;
+
+    public Cliente(Socket socket) {
+        this.socket = socket;
+    }
     
     public PublicKey getLlavePublicaServidor() {
         return llavePublicaServidor;
@@ -63,20 +74,29 @@ public class Cliente extends Thread{
         this.llaveHMAC = llaveHMAC;
     }
 
+    @Override
+    public void run() {
+        try {
+            enviarSaludo(socket);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public void enviarSaludo(Socket socket) throws IOException, SignatureException, NoSuchAlgorithmException, InvalidKeyException, ClassNotFoundException, InvalidAlgorithmParameterException, InvalidKeySpecException{
-        DataOutputStream s1 = new DataOutputStream(socket.getOutputStream());
+        DataOutputStream sdo1 = new DataOutputStream(socket.getOutputStream());
         //hello
-        s1.writeUTF("HELLO");
-        s1.flush();
+        sdo1.writeUTF("HELLO");
+        sdo1.flush();
         //reto
         Random r = new Random();
         int reto = r.nextInt(10000);
-        s1.writeInt(reto);
+        sdo1.writeInt(reto);sdo1.flush();
         //verificar firma y enviar ok o error 
-        ObjectInputStream s2 = new ObjectInputStream(socket.getInputStream()); 
-        int longitudllavePublicaRSA = s2.readInt();
-        byte[] claveBytes = new byte[longitudllavePublicaRSA];
-        s2.readFully(claveBytes);
+        ObjectInputStream soi2 = new ObjectInputStream(socket.getInputStream()); 
+        int longitudllavePublicaRSA = soi2.readInt();
+        byte[] sigReto = new byte[longitudllavePublicaRSA];
+        soi2.readFully(sigReto);
 
         PublicKey clavePublica = CifradoUtils.leerPublica();
 
@@ -88,30 +108,29 @@ public class Cliente extends Thread{
         sig.initVerify(clavePublica);
         sig.update(rta);
 
-        if (sig.verify(claveBytes)){
-            DataOutputStream s3 = new DataOutputStream(socket.getOutputStream());
-            s1.writeUTF("OK");
+        if (sig.verify(sigReto)){
+            sdo1.writeUTF("OK");
+            sdo1.flush();
         }
         else{
-            DataOutputStream s4 = new DataOutputStream(socket.getOutputStream());
-            s1.writeUTF("ERROR");
+            sdo1.writeUTF("ERROR");
+            sdo1.flush();
         }
-        socket.close();
+      
         //verificar DH
-        ObjectInputStream s5 = new ObjectInputStream(socket.getInputStream());
-        int longitudClave = s5.readInt();
+        int longitudClave = soi2.readInt();
         byte[] claveB = new byte[longitudClave];
-        s2.readFully(claveB);
+        soi2.readFully(claveB);
 
         PublicKey claveP = CifradoUtils.leerPublica();
 
-        BigInteger G = (BigInteger) s5.readObject();
-        BigInteger P = (BigInteger) s5.readObject();
-        BigInteger Gx = (BigInteger) s5.readObject();
+        BigInteger G = (BigInteger) soi2.readObject();
+        BigInteger P = (BigInteger) soi2.readObject();
+        BigInteger Gx = (BigInteger) soi2.readObject();
 
-        int longitudFirma = s5.readInt();
+        int longitudFirma = soi2.readInt();
         byte[] firmaB = new byte[longitudFirma];
-        s5.readFully(firmaB);
+        soi2.readFully(firmaB);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(baos);
@@ -126,11 +145,10 @@ public class Cliente extends Thread{
         sign.initVerify(clavePublica);
         sign.update(datosFirmados);
 
-        DataOutputStream s6 = new DataOutputStream(socket.getOutputStream());
         if (sig.verify(firmaB)) {
-                s6.writeUTF("OK");
+                sdo1.writeUTF("OK");sdo1.flush();
         } else {
-            s6.writeUTF("ERROR");
+            sdo1.writeUTF("ERROR");sdo1.flush();
         }
 
         //calcular gxy
@@ -155,10 +173,13 @@ public class Cliente extends Thread{
         MessageDigest sha  = MessageDigest.getInstance("SHA-512");
         byte[] k_ab1 = sha.digest(sharedSecret);
 
-        byte[] aesKey = new byte[32];
-        byte[] hmacKey = new byte[32];
-        System.arraycopy(k_ab1, 0, aesKey, 0, 32);
-        System.arraycopy(k_ab1, 32, hmacKey, 0, 32);
+        byte[] aesBytes = new byte[32];
+        byte[] hmacBytes = new byte[32];
+        System.arraycopy(k_ab1, 0, aesBytes, 0, 32);
+        System.arraycopy(k_ab1, 32, hmacBytes, 0, 32);
+        
+        SecretKeySpec aesKeySpec  = new SecretKeySpec(aesBytes, "AES");
+        SecretKeySpec hmacKeySpec = new SecretKeySpec(hmacBytes, "HmacSHA256");
         //obtener el y  generar el IV y enviarlo al servidor
         BigInteger gy = ((DHPublicKey) publicKey).getY();
 
@@ -169,17 +190,50 @@ public class Cliente extends Thread{
         ObjectOutputStream salida = new ObjectOutputStream(socket.getOutputStream());
         salida.writeObject(gy);
         salida.writeObject(ivBytes);
+        salida.flush();
 
         // verificacion hmac
+        SecureRandom ivSec = new SecureRandom(ivBytes);
+
+        Mac hmac = Mac.getInstance("HmacSHA256");
+
+        // --- Paso 13 & 13b: recibir servicios + HMAC y verificar HMAC ---
         DataInputStream dis = new DataInputStream(socket.getInputStream());
-        int longC = dis.readInt();
-        byte[] encrypt = dis.readNBytes(longC);
-
-        int longM = dis.readInt();
-        byte[] rmac = dis.readNBytes(longM);
-
-        Mac hmac = Mac.getInstance("HmacSHA-512");
-       
+        int count = dis.readInt();
+        List<String> servicios = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            byte[] encSvc = (byte[]) soi2.readObject();
+            byte[] decSvc = CifradoUtils.simetricoDescifrar(aesKeySpec, ivSec, encSvc);
+            servicios.add(new String(decSvc, StandardCharsets.UTF_8));
+        }
+        byte[] macServicios = (byte[]) soi2.readObject();
+        hmac.init(hmacKeySpec);
+        byte[] calcSvcMac = hmac.doFinal(String.join("", servicios).getBytes(StandardCharsets.UTF_8));
+        if (!Arrays.equals(calcSvcMac, macServicios)) {
+            throw new SecurityException("HMAC servicios inválido");
+        }
+         // 14) Enviar id_servicio+IP cliente cifrados + HMAC
+         String idSvc = servicios.get(0).split(" ")[0];
+         String ipCli = InetAddress.getLocalHost().getHostAddress();
+         String payload14 = idSvc + ipCli;
+         byte[] enc14 = CifradoUtils.simetricoCifrar(aesKeySpec, ivSec, payload14);
+         byte[] mac14 = hmac.doFinal(payload14.getBytes(StandardCharsets.UTF_8));
+         oos.writeObject(enc14);
+         oos.writeObject(mac14);
+         oos.flush();
+ 
+         // 16) Recibir ip_servidor+puerto cifrados + HMAC
+         byte[] enc16 = (byte[]) soi2.readObject();
+         byte[] mac16 = (byte[]) soi2.readObject();
+         hmac.init(hmacKeySpec);
+         byte[] dec16 = CifradoUtils.simetricoDescifrar(aesKeySpec, ivSec, enc16);
+         byte[] calc16 = hmac.doFinal(dec16);
+ 
+         // 17 & 18) Confirmar al servidor
+         sdo1.writeUTF(Arrays.equals(calc16, mac16) ? "OK" : "ERROR");
+         sdo1.flush();
+ 
+         socket.close();
     }
 
     
