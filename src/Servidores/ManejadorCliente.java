@@ -68,6 +68,8 @@ public class ManejadorCliente extends Thread {
             if(verRta.equals("ERROR")){
                 System.out.println("ERROR");
                 throw new Exception("Error en la firma del reto");
+            } else {
+                System.out.println("Respuesta verificacion RTA: OK");
             }
 
             //Paso 7. Generacion de G, P y G^x
@@ -117,6 +119,8 @@ public class ManejadorCliente extends Thread {
             if(verRta2.equals("ERROR")){
                 System.out.println("ERROR");
                 throw new Exception("Error en la firma del mensaje G, P, G^x & F(K_w-, (G, P, G^x))");
+            } else {
+                System.out.println("Respuesta verificacion F(K_w-, (G, P, G^x)): OK");
             }
 
             //Recibimiento G^y
@@ -188,6 +192,8 @@ public class ManejadorCliente extends Thread {
             if(verIP.equals("ERROR")){
                 System.out.println("ERROR");
                 throw new Exception("Error en el hmac del mensaje IP:PUERTO");
+                } else {
+                System.out.println("Respuesta verificacion IP:PUERTO: OK");
                 }
             } else {
                 throw new Exception("HMAC incorrecto");
