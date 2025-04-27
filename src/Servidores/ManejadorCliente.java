@@ -16,7 +16,6 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.security.Signature;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -25,6 +24,7 @@ import javax.crypto.KeyAgreement;
 import javax.crypto.interfaces.DHPublicKey;
 import javax.crypto.spec.DHParameterSpec;
 import javax.crypto.spec.DHPublicKeySpec;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import Cifrado.CifradoUtils;
@@ -133,7 +133,7 @@ public class ManejadorCliente extends Thread {
             byte[] secretitoComp = keyAgree.generateSecret();
 
             //Generar llave para cifrar K_AB1
-            byte[] k_ab1 = CifradoUtils.getDigest("SHA-256", secretitoComp);
+            byte[] k_ab1 = CifradoUtils.getDigest("SHA-512", secretitoComp);
 
             byte[] aesKey = new byte[32];
             byte[] hmacKey = new byte[32];
@@ -146,7 +146,7 @@ public class ManejadorCliente extends Thread {
             //Recibiendo vector de inicializacion
             byte[] iv = new byte[16];
             iv = (byte[]) obIn.readObject();
-            SecureRandom ivSec = new SecureRandom(iv);
+            IvParameterSpec ivSec = new IvParameterSpec(iv);
 
             //Cifrado hash
             HashMap<String, String> servicios = ServidorMain.getServicios();

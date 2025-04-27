@@ -20,7 +20,7 @@ public class ServidorMain {
 
             while (true) {
                 socket = server.accept();
-                new Thread(new ManejadorCliente(socket)).start();
+                new ManejadorCliente(socket).start();
 
                 System.out.println("Cliente conectado: " + socket.getInetAddress().getHostAddress() + ":" + socket.getPort());
                 System.out.println("Esperando cliente...");

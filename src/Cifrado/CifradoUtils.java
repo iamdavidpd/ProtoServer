@@ -7,17 +7,17 @@ import java.security.Key;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
 
 public class CifradoUtils {
     
     private final static String PADDING = "AES/CBC/PKCS5Padding";
 
-    public static byte[] simetricoCifrar(SecretKey llave, SecureRandom iv, String texto){
+    public static byte[] simetricoCifrar(SecretKey llave, IvParameterSpec iv, String texto){
         byte[] textoCifrado;
 
         try {
@@ -35,7 +35,7 @@ public class CifradoUtils {
         }
     }
 
-    public static byte[] simetricoDescifrar(SecretKey llave, SecureRandom iv, byte[] texto){
+    public static byte[] simetricoDescifrar(SecretKey llave, IvParameterSpec iv, byte[] texto){
         byte[] textoClaro;
 
         try {
@@ -83,7 +83,7 @@ public class CifradoUtils {
     public static PrivateKey leerPrivada(){
         PrivateKey privada;
         try {
-        ObjectInputStream ois = new ObjectInputStream(new FileInputStream("ProtoServer/src/llaves/private.key"));
+        ObjectInputStream ois = new ObjectInputStream(new FileInputStream("./src/llaves/private.key"));
         privada = (PrivateKey) ois.readObject();
         } catch (IOException | ClassNotFoundException e){
             e.printStackTrace();
@@ -95,7 +95,7 @@ public class CifradoUtils {
     public static PublicKey leerPublica(){
         PublicKey publica;
         try {
-        ObjectInputStream ois = new ObjectInputStream(new FileInputStream("ProtoServer/src/llaves/public.key"));
+        ObjectInputStream ois = new ObjectInputStream(new FileInputStream("./src/llaves/public.key"));
         publica = (PublicKey) ois.readObject();
         } catch (IOException | ClassNotFoundException e){
             e.printStackTrace();
