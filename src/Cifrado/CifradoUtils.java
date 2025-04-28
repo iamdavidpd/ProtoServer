@@ -83,7 +83,7 @@ public class CifradoUtils {
     public static PrivateKey leerPrivada(){
         PrivateKey privada;
         try {
-        ObjectInputStream ois = new ObjectInputStream(new FileInputStream("./src/llaves/private.key"));
+        ObjectInputStream ois = new ObjectInputStream(new FileInputStream("ProtoServer/src/llaves/private.key"));
         privada = (PrivateKey) ois.readObject();
         } catch (IOException | ClassNotFoundException e){
             e.printStackTrace();
@@ -95,7 +95,7 @@ public class CifradoUtils {
     public static PublicKey leerPublica(){
         PublicKey publica;
         try {
-        ObjectInputStream ois = new ObjectInputStream(new FileInputStream("./src/llaves/public.key"));
+        ObjectInputStream ois = new ObjectInputStream(new FileInputStream("ProtoServer/src/llaves/public.key"));
         publica = (PublicKey) ois.readObject();
         } catch (IOException | ClassNotFoundException e){
             e.printStackTrace();
