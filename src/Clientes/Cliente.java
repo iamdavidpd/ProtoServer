@@ -184,6 +184,7 @@ public class Cliente extends Thread{
         // --- Paso 13 & 13b: recibir servicios + HMAC y verificar HMAC ---
         DataInputStream dis = new DataInputStream(socket.getInputStream());
         int count = dis.readInt();
+        
         List<String> servicios = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             byte[] encSvc = (byte[]) soi2.readObject();
@@ -191,11 +192,16 @@ public class Cliente extends Thread{
             servicios.add(new String(decSvc, StandardCharsets.UTF_8));
         }
         byte[] macServicios = (byte[]) soi2.readObject();
+        long inicioTabla = System.nanoTime();
         hmac.init(hmacKeySpec);
         byte[] calcSvcMac = hmac.doFinal(String.join("", servicios).getBytes(StandardCharsets.UTF_8));
         if (!Arrays.equals(calcSvcMac, macServicios)) {
             throw new SecurityException("HMAC servicios inválido");
         }
+        long finTabla = System.nanoTime();  // ← fin medición tabla
+        System.out.println("(Cliente) Tiempo verificación y descifrado de tabla de servicios: "
+                           + (finTabla - inicioTabla) + " ns");
+
          // 14) Enviar id_servicio+IP cliente cifrados + HMAC
         String idSvc = servicios.get(0).split(" ")[0];
         String ipCli = InetAddress.getLocalHost().getHostAddress();

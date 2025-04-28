@@ -58,12 +58,15 @@ public class ManejadorCliente extends Thread {
             byte[] retoBy = ByteBuffer.allocate(4).putInt(reto).array();
 
             //Creando rta y enviando
+            long tiempoInRet = System.nanoTime(); 
             Signature firma = Signature.getInstance("SHA256withRSA");
             firma.initSign(llavePrivadaFirmas);
             firma.update(retoBy);
 
             byte[] firmaBy = firma.sign();
             out.writeObject(firmaBy);
+            long tiempoOuRet = System.nanoTime();
+            System.out.println("(Usuario " + contador + ") Tiempo para firmar (reto): " + (tiempoOuRet-tiempoInRet) + " ns" );
 
             //Recibiendo "OK"|"ERROR"
             String verRta = in.readUTF();
@@ -102,12 +105,16 @@ public class ManejadorCliente extends Thread {
             oos.flush();
 
             byte[] mensaje = baos.toByteArray();
-
+            
+            //MEDIR TIEMPO FIRMA
+            long tiempoIn = System.nanoTime(); 
             Signature firma2 = Signature.getInstance("SHA256withRSA");
             firma2.initSign(llavePrivadaFirmas);
             firma2.update(mensaje);
 
             byte[] firma2By = firma2.sign();
+            long tiempoFin = System.nanoTime();
+            System.out.println("(Usuario " + contador + ") Tiempo para firmar (mensaje): " + (tiempoFin-tiempoIn) + " ns" );
 
             //Envio G, P, G^x & F(K_w-, (G, P, G^x))
             out.writeObject(G);
@@ -160,6 +167,7 @@ public class ManejadorCliente extends Thread {
             int tamanoHash = servicios.size();
             out2.writeInt(tamanoHash);
             String servCompleto = "";
+            long aes = System.nanoTime();
             for(String clave : servicios.keySet()){
                 String servicio = clave + " " + servicios.get(clave);
                 servCompleto += servicio;
@@ -167,10 +175,16 @@ public class ManejadorCliente extends Thread {
                 out.writeObject(cif);
                 out.flush();
             }
+            long aesou = System.nanoTime();
+            System.out.println("(Usuario " + contador + ") Tiempo para cifrar tabla con AES (Asimetrico): " + (aesou-aes) + " ns" );
+
+            long hmacc = System.nanoTime();
             byte[] servcomby = servCompleto.getBytes();
             byte[] hmc = CifradoUtils.hmac("HMACSHA256", hmacKeySpec, servcomby);
             out.writeObject(hmc);
             out.flush();
+            long hmaccout = System.nanoTime();
+            System.out.println("(Usuario " + contador + ") Tiempo para generar HMAC (Simetrico): " + (hmaccout-hmacc) + " ns" );
 
             byte[] cifradoServer = (byte[]) obIn.readObject();
             byte[] hmacServer = (byte[]) obIn.readObject();
