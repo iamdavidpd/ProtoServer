@@ -14,6 +14,9 @@ public class Main {
 
         try {
 
+            Thread ejecutarServer = new Thread(() -> ServidorMain.main(new String[0]));
+            ejecutarServer.start();
+
             for(int i = 0; i < 2; i++){
                 Socket socket = new Socket(host, port);
                 Cliente cliente = new Cliente(socket);
