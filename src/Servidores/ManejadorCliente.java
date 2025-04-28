@@ -32,12 +32,14 @@ import Cifrado.CifradoUtils;
 public class ManejadorCliente extends Thread {
     private Socket socket;
     private static PrivateKey llavePrivadaFirmas;
+    private int contador;
 
 
-    public ManejadorCliente(Socket socket) {
+    public ManejadorCliente(Socket socket, int contador) {
         this.socket = socket;
         llavePrivadaFirmas = CifradoUtils.leerPrivada();
-    }
+        this.contador = contador;
+        }
 
     public void run(){
         DataInputStream in;
@@ -69,7 +71,7 @@ public class ManejadorCliente extends Thread {
                 System.out.println("ERROR");
                 throw new Exception("Error en la firma del reto");
             } else {
-                System.out.println("Respuesta verificacion RTA: OK");
+                System.out.println("(Usuario " + contador + ")" + " Respuesta verificacion RTA: OK");
             }
 
             //Paso 7. Generacion de G, P y G^x
@@ -120,7 +122,7 @@ public class ManejadorCliente extends Thread {
                 System.out.println("ERROR");
                 throw new Exception("Error en la firma del mensaje G, P, G^x & F(K_w-, (G, P, G^x))");
             } else {
-                System.out.println("Respuesta verificacion F(K_w-, (G, P, G^x)): OK");
+                System.out.println("(Usuario " + contador + ")" +" Respuesta verificacion F(K_w-, (G, P, G^x)): OK");
             }
 
             //Recibimiento G^y
@@ -193,7 +195,7 @@ public class ManejadorCliente extends Thread {
                 System.out.println("ERROR");
                 throw new Exception("Error en el hmac del mensaje IP:PUERTO");
                 } else {
-                System.out.println("Respuesta verificacion IP:PUERTO: OK");
+                System.out.println("(Usuario " + contador + ")" + " Respuesta verificacion IP:PUERTO: OK");
                 }
             } else {
                 throw new Exception("HMAC incorrecto");

@@ -18,12 +18,14 @@ public class ServidorMain {
             System.out.println("Servidor iniciado");
             Socket socket;
 
+            int i = 1;
+
             while (true) {
                 socket = server.accept();
-                new ManejadorCliente(socket).start();
+                new Thread(new ManejadorCliente(socket, i)).start();;
 
-                System.out.println("Cliente conectado: " + socket.getInetAddress().getHostAddress() + ":" + socket.getPort());
-                System.out.println("Esperando cliente...");
+                System.out.println("Cliente #" + i + " conectado:" + socket.getInetAddress().getHostAddress() + ":" + socket.getPort());
+                i++;
 
             }
 

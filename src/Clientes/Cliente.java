@@ -217,7 +217,6 @@ public class Cliente extends Thread{
         sdo1.writeUTF(Arrays.equals(calc16, mac16) ? "OK" : "ERROR");
         sdo1.flush();
 
-        socket.close();
     }
 
     }
