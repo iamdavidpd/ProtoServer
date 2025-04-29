@@ -161,7 +161,7 @@ public class ManejadorCliente extends Thread {
             iv = (byte[]) obIn.readObject();
             IvParameterSpec ivSec = new IvParameterSpec(iv);
 
-            //Cifrado hash
+            //Cifrado simetrico mapa
             HashMap<String, String> servicios = ServidorMain.getServicios();
             DataOutputStream out2 = new DataOutputStream(socket.getOutputStream());
             int tamanoHash = servicios.size();
@@ -176,7 +176,16 @@ public class ManejadorCliente extends Thread {
                 out.flush();
             }
             long aesou = System.nanoTime();
-            System.out.println("(Usuario " + contador + ") Tiempo para cifrar tabla con AES (Asimetrico): " + (aesou-aes) + " ns" );
+            System.out.println("(Usuario " + contador + ") Tiempo para cifrar tabla con AES (Simetrico): " + (aesou-aes) + " ns" );
+
+            //Cifrado asimetrico mapa
+            long rsa = System.nanoTime();
+            for(String clave : servicios.keySet()){
+                String servicio = clave + " " + servicios.get(clave);
+                byte[] cif = CifradoUtils.asimetricoCifrar(llavePrivadaFirmas, "RSA", servicio);
+            }
+            long rsaou = System.nanoTime();
+            System.out.println("(Usuario " + contador + ") Tiempo para cifrar tabla con RSA (Asimetrico): " + (rsaou-rsa) + " ns" );
 
             long hmacc = System.nanoTime();
             byte[] servcomby = servCompleto.getBytes();
